@@ -1,0 +1,17 @@
+﻿@inject CustomerService CustomerService
+
+<h3>@customer.Name's Profile</h3>
+<p>Loyalty Points: @customer.LoyaltyPoints</p>
+<p>Membership Tier: @customer.MembershipTier</p>
+
+@code {
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    private Customer customer = new();
+
+    protected override void OnInitialized()
+    {
+        customer = CustomerService.GetCustomerById(CustomerId);
+    }
+}
