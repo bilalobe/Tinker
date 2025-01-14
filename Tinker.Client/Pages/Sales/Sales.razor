@@ -1,0 +1,112 @@
+﻿@page "/sales"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Orders
+@attribute [Authorize(Roles = "SalesPerson,Admin,Manager")]
+
+<PageHeader Title="Sales" Icon="fa-shopping-cart">
+    <ActionButtons>
+        <button class="btn btn-primary" @onclick="CreateSale">
+            <i class="fas fa-plus"></i> New Sale
+        </button>
+    </ActionButtons>
+</PageHeader>
+
+<PageErrorBoundary ShowTechnicalDetails="true" RetryEndpoint="/api/sales">
+    <LoadingState IsLoading="@isLoading" Message="Loading sales data..." Color="info">
+        <DataCard>
+            <LoadingState IsLoading="@loadingOrders" Message="Fetching orders..." Centered="false">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var order in orders)
+                        {
+                            <tr>
+                                <td>@order.Id</td>
+                                <td>@order.Date.ToLocalTime().ToString("g")</td>
+                                <td>@order.CustomerName</td>
+                                <td>@order.Items.Count items</td>
+                                <td>@order.TotalAmount.ToString("C")</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" @onclick="() => ViewSale(order.Id)">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </LoadingState>
+        </DataCard>
+    </LoadingState>
+</PageErrorBoundary>
+
+@code {
+    private bool isLoading = true;
+    private bool loadingOrders;
+    private IEnumerable<Order> orders = Enumerable.Empty<Order>();
+
+    [Inject] private OrderService OrderService { get; set; } = default!;
+
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject] private IWebHostEnvironment environment { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            loadingOrders = true;
+            await LoadOrders();
+        }
+        finally
+        {
+            loadingOrders = false;
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadOrders()
+    {
+        var orderDTOs = await OrderService.GetOrders();
+        orders = orderDTOs.Select(dto => new Order
+        {
+            Id = dto.Id,
+            CustomerId = dto.CustomerId,
+            CustomerName = dto.CustomerName,
+            Date = dto.Date,
+            TotalAmount = dto.TotalAmount,
+            Items = dto.Items.Select(item => new OrderItem
+            {
+                Id = item.Id,
+                ProductId = item.ProductId,
+                ProductName = item.ProductName,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice,
+                DiscountPercentage = item.DiscountPercentage
+            }).ToList()
+        }).ToList();
+    }
+
+    private void CreateSale()
+    {
+        NavigationManager.NavigateTo("/sales/create");
+    }
+
+    private void ViewSale(int id)
+    {
+        NavigationManager.NavigateTo($"/sales/{id}");
+    }
+
+}

@@ -1,0 +1,94 @@
+@page "/sales/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Orders
+@using Tinker.Shared.DTOs.Orders
+@attribute [Authorize]
+@inject OrderService OrderService
+@inject NavigationManager NavigationManager
+
+<h3>Sale Details</h3>
+
+@if (order == null)
+{
+    <LoadingState IsLoading="true" Message="Loading sale details..."></LoadingState>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Order ID:</dt>
+                        <dd class="col-sm-8">@order.Id</dd>
+
+                        <dt class="col-sm-4">Date:</dt>
+                        <dd class="col-sm-8">@order.Date.ToLocalTime().ToString("g")</dd>
+
+                        <dt class="col-sm-4">Customer:</dt>
+                        <dd class="col-sm-8">@order.CustomerName</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h4>Items</h4>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Discount</th>
+                    <th>Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in order.Items)
+                {
+                    <tr>
+                        <td>@item.ProductName</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.UnitPrice.ToString("C")</td>
+                        <td>@item.DiscountPercentage%</td>
+                        <td>@((item.Quantity * item.UnitPrice * (1 - item.DiscountPercentage / 100)).ToString("C"))</td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                    <td><strong>@order.TotalAmount.ToString("C")</strong></td>
+                </tr>
+                </tfoot>
+            </table>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button class="btn btn-outline-secondary" @onclick="BackToList">
+                    <i class="fas fa-arrow-left"></i> Back to Sales
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private OrderDto? order;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var orders = await OrderService.GetOrders();
+        order = orders.FirstOrDefault(o => o.Id == Id);
+    }
+
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/sales");
+    }
+
+}
