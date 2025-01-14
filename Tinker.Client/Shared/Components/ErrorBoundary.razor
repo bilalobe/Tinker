@@ -1,0 +1,13 @@
+@inherits Microsoft.AspNetCore.Components.ErrorBoundary
+
+<CascadingValue Value="this">
+    @ChildContent
+</CascadingValue>
+
+@if (CurrentException is not null)
+{
+    <div class="alert alert-danger">
+        <h3>Error</h3>
+        <p>@CurrentException.Message</p>
+    </div>
+}
