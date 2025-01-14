@@ -1,0 +1,18 @@
+@inject IJSRuntime JSRuntime
+
+<div id="salesChart" style="height: 300px;"></div>
+
+@code {
+    [Parameter] public Dictionary<DateTime, decimal>? Data { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Data != null)
+        {
+            await JSRuntime.InvokeVoidAsync("createSalesChart",
+                Data.Keys.Select(d => d.ToString("MM/dd")),
+                Data.Values);
+        }
+    }
+
+}

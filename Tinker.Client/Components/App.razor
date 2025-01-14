@@ -1,0 +1,68 @@
+﻿@using Tinker.Client.Components.Layout
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <base href="/"/>
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css"/>
+    <link rel="stylesheet" href="app.css"/>
+    <link rel="stylesheet" href="Tinker.styles.css"/>
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    <HeadOutlet/>
+</head>
+
+<body>
+<CascadingAuthenticationState>
+    <GlobalSeoMetadata/>
+    <SchemaOrg SchemaData="@_businessSchema"/>
+    <CascadingValue Value="this">
+        <ErrorBoundary>
+            <Router AppAssembly="@typeof(App).Assembly">
+                <Found Context="routeData">
+                    <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+                </Found>
+            </Router>
+        </ErrorBoundary>
+    </CascadingValue>
+</CascadingAuthenticationState>
+<script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>
+
+@code {
+
+    private readonly LocalBusiness _businessSchema = new()
+    {
+        Name = "Tinker Pharmacy",
+        Description = "Modern pharmacy management system",
+        Address = new PostalAddress
+        {
+            StreetAddress = "123 Main Street",
+            AddressLocality = "City",
+            AddressRegion = "State",
+            PostalCode = "12345",
+            AddressCountry = "MA"
+        },
+        Telephone = "+212-123-4567",
+        PriceRange = "€€",
+        OpeningHours = new[]
+        {
+            new OpeningHoursSpecification
+            {
+                DayOfWeek = [new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" }],
+                Opens = "09:00",
+                Closes = "18:00"
+            },
+            new OpeningHoursSpecification
+            {
+                DayOfWeek = [new[] { "Saturday" }],
+                Opens = "10:00",
+                Closes = "14:00"
+            }
+        }
+    };
+
+}
