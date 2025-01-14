@@ -1,0 +1,33 @@
+<div class="card @Class">
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <h4 class="card-title">@Title</h4>
+        }
+        @if (IsLoading)
+        {
+            <LoadingState Message="@LoadingMessage"/>
+        }
+        else if (HasError)
+        {
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                @ErrorMessage
+            </div>
+        }
+        else
+        {
+            @ChildContent
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string LoadingMessage { get; set; } = "Loading...";
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public string ErrorMessage { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
