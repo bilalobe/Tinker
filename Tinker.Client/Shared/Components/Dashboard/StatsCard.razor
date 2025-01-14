@@ -1,0 +1,32 @@
+<div class="card bg-@Color text-@(IsDarkColor(Color) ? "white" : "dark") h-100">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="card-subtitle mb-2">@Title</h6>
+                <h2 class="card-title mb-0">@(Value ?? "-")</h2>
+            </div>
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <i class="fas @Icon fa-2x opacity-50"></i>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string Color { get; set; } = "primary";
+
+    private bool IsDarkColor(string color)
+    {
+        return color switch
+               {
+                   "light" => false,
+                   "warning" => false,
+                   _ => true
+               };
+    }
+
+}

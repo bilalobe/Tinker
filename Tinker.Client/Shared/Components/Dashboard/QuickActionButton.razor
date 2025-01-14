@@ -1,0 +1,14 @@
+<a href="@Href" class="btn btn-@Color btn-lg w-100 mb-2 text-start">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <i class="fas @Icon me-2"></i>
+    }
+    @Text
+</a>
+
+@code {
+    [Parameter] public string Href { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public string Color { get; set; } = "primary";
+}
