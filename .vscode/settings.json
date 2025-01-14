@@ -1,0 +1,7 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "bilalobe",
+        "projectKey": "bilalobe_Tinker"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
+}
