@@ -1,0 +1,39 @@
+<div class="nav-menu">
+    <AuthorizeView>
+        <NavLink href="/" Match="NavLinkMatch.All" class="nav-link">
+            <i class="fas fa-home"></i> Dashboard
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="SalesPerson,Admin,Manager">
+        <NavLink href="/sales" class="nav-link">
+            <i class="fas fa-shopping-cart"></i> Sales
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="ProductManager,Admin,InventoryManager">
+        <NavLink href="/products" class="nav-link">
+            <i class="fas fa-box"></i> Products
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="InventoryManager,Admin" Policy="CanManageInventory">
+        <NavLink href="/inventory" class="nav-link">
+            <i class="fas fa-boxes"></i> Inventory
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="Admin,Manager" Policy="CanViewReports">
+        <NavLink href="/reports" class="nav-link">
+            <i class="fas fa-chart-line"></i> Reports
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="Admin">
+        <NavLink href="/settings" class="nav-link">
+            <i class="fas fa-cog"></i> Settings
+        </NavLink>
+    </AuthorizeView>
+</div>
+
+// ...existing code...

@@ -1,0 +1,30 @@
+@namespace Tinker.Client.Shared.Components.Layout
+
+<div class="tooltip-wrapper" @onmouseover="Show" @onmouseout="Hide">
+    @ChildContent
+    @if (IsVisible)
+    {
+        <div class="tooltip-content @Position.ToString().ToLower()">
+            @Text
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public TooltipPosition Position { get; set; } = TooltipPosition.Top;
+
+    private bool IsVisible { get; set; }
+
+    private void Show()
+    {
+        IsVisible = true;
+    }
+
+    private void Hide()
+    {
+        IsVisible = false;
+    }
+
+}
