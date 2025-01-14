@@ -361,3 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Report Builder ClickOnce application files
+ReportBuilder_*.application
+
+# SQL Server Analysis Services Project
+*.abfSln
+
+# JetBrains Rider
+.idea/
+
+# Other
+report/
