@@ -1,0 +1,77 @@
+@page "/inventory/expiry-tracking"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Inventory.Interfaces
+@attribute [Authorize]
+@inject IInventoryService InventoryService
+
+<PageTitle>Expiry Tracking - Tinker POS</PageTitle>
+
+<div class="card">
+    <div class="card-body">
+        <h3>Expiry Tracking</h3>
+
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Product Name</th>
+                <th>Batch Number</th>
+                <th>Expiry Date</th>
+                <th>Days Until Expiry</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var product in products.OrderBy(p => p.ExpiryDate))
+            {
+                var daysUntilExpiry = (product.ExpiryDate - DateTime.Today).Days;
+                <tr>
+                    <td>@product.Reference</td>
+                    <td>@product.Name</td>
+                    <td>@product.BatchNumber</td>
+                    <td>@product.ExpiryDate.ToShortDateString()</td>
+                    <td>@daysUntilExpiry days</td>
+                    <td>
+                            <span class="badge bg-@GetExpiryClass(daysUntilExpiry)">
+                                @GetExpiryStatus(daysUntilExpiry)
+                            </span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<Product> products = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var report = await InventoryService.GenerateInventoryReport();
+        products = report.AllProducts;
+    }
+
+    private static string GetExpiryClass(int daysUntilExpiry)
+    {
+        return daysUntilExpiry switch
+               {
+                   int days when days < 0 => "danger",
+                   int days when days < 30 => "warning",
+                   int days when days < 90 => "info",
+                   _ => "success"
+               };
+    }
+
+    private static string GetExpiryStatus(int daysUntilExpiry)
+    {
+        return daysUntilExpiry switch
+               {
+                   int days when days < 0 => "Expired",
+                   int days when days < 30 => "Expiring Soon",
+                   int days when days < 90 => "3 Months",
+                   _ => "Valid"
+               };
+    }
+
+}

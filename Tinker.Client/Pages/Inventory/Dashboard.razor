@@ -1,0 +1,137 @@
+@page "/inventory"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Inventory
+@attribute [Authorize(Roles = "InventoryManager,Admin")]
+@attribute [Authorize(Policy = "CanManageInventory")]
+@inject NavigationManager NavigationManager
+
+<SeoMetadata
+    Title="Inventory Dashboard - Tinker POS"
+    Description="Manage your parapharmacy inventory"
+    Keywords="inventory, stock management, parapharmacy, expiry tracking"/>
+
+<PageHeader Title="Inventory Dashboard" Icon="fa-boxes">
+    <ActionButtons>
+        <button class="btn btn-primary" @onclick="AddNewItem">
+            <i class="fas fa-plus"></i> Add New Item
+        </button>
+    </ActionButtons>
+</PageHeader>
+
+<PageErrorBoundary
+    ShowTechnicalDetails="true"
+    RetryEndpoint="/api/inventory/dashboard"
+    CustomErrorMessage="Unable to load inventory dashboard">
+    <LoadingState IsLoading="@isLoading" Message="Loading inventory dashboard...">
+        <div class="row">
+            <div class="col-md-8">
+                <LoadingState IsLoading="@loadingMetrics" Message="Loading metrics..." Centered="false">
+                    <div class="row">
+                        <!-- Stock Overview Card -->
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Products</h5>
+                                    <h2>@totalProducts</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Low Stock Alert Card -->
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body">
+                                    <h5 class="card-title">Low Stock Items</h5>
+                                    <h2>@lowStockCount</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expiring Soon Card -->
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Expiring Soon</h5>
+                                    <h2>@expiringCount</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Value Card -->
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Inventory Value</h5>
+                                    <h2>@inventoryValue.ToString("C")</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </LoadingState>
+            </div>
+            <div class="col-md-4">
+                <LoadingState IsLoading="@loadingAlerts" Message="Loading alerts..." Centered="false">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1>Inventory Management</h1>
+                        <div class="btn-group">
+                            <button class="btn btn-primary"
+                                    @onclick="@(() => NavigationManager.NavigateTo("/inventory/stock-levels"))">
+                                <i class="fas fa-boxes"></i> Stock Levels
+                            </button>
+                            <button class="btn btn-info"
+                                    @onclick="@(() => NavigationManager.NavigateTo("/inventory/expiry-tracking"))">
+                                <i class="fas fa-calendar-alt"></i> Expiry Tracking
+                            </button>
+                        </div>
+                    </div>
+                </LoadingState>
+            </div>
+        </div>
+    </LoadingState>
+</PageErrorBoundary>
+
+@code {
+    private bool isLoading = true;
+    private bool loadingMetrics;
+    private bool loadingAlerts;
+    private int totalProducts;
+    private int lowStockCount;
+    private int expiringCount;
+    private decimal inventoryValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            loadingMetrics = true;
+            loadingAlerts = true;
+
+            var metricsTask = LoadMetrics();
+            var alertsTask = LoadAlerts();
+
+            await Task.WhenAll(metricsTask, alertsTask);
+        }
+        finally
+        {
+            loadingMetrics = false;
+            loadingAlerts = false;
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadMetrics()
+    {
+        var report = await InventoryService.GenerateInventoryReport();
+        totalProducts = report.TotalProducts;
+        lowStockCount = report.LowStockProducts.Count;
+        expiringCount = report.ExpiringProducts.Count;
+        inventoryValue = report.TotalProductValue;
+    }
+
+    private async Task LoadAlerts()
+    {
+        // Load alerts logic here
+    }
+
+}

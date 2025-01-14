@@ -1,0 +1,48 @@
+@using Blazored.Modal
+@using Blazored.Modal.Services
+@using Tinker.Core.Domain.Inventory.Entities
+@using Tinker.Core.Services.Inventory
+<div class="modal-content">
+    <div class="modal-body">
+        <EditForm Model="@stockAdjustment" OnValidSubmit="@SubmitForm">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+            <div class="mb-3">
+                <label class="form-label">Quantity Change:</label>
+                <InputNumber @bind-Value="stockAdjustment.Quantity" class="form-control"/>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Operation:</label>
+                <InputSelect @bind-Value="stockAdjustment.Operation" class="form-control">
+                    <option value="add">Add</option>
+                    <option value="remove">Remove</option>
+                </InputSelect>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance Modal { get; set; } = default!;
+    [Parameter] public Product Product { get; set; } = default!;
+    [Inject] private InventoryService InventoryService { get; set; } = default!;
+
+    private readonly StockAdjustment stockAdjustment = new();
+
+    private async Task SubmitForm()
+    {
+        var updatedProduct = await InventoryService.UpdateStockLevelAsync(
+            Product.Id,
+            stockAdjustment.Quantity,
+            stockAdjustment.Operation);
+        await Modal.CloseAsync(ModalResult.Ok(updatedProduct));
+    }
+
+    private async Task Cancel()
+    {
+        await Modal.CancelAsync();
+    }
+
+}
