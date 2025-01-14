@@ -1,0 +1,136 @@
+@inject ILogger<PageErrorBoundary> Logger
+@inject IToastService ToastService
+@inject IHttpClientFactory HttpClientFactory
+@using Blazored.Toast.Services
+@inherits Microsoft.AspNetCore.Components.Web.ErrorBoundary
+
+<CascadingValue Value="this">
+    @if (CurrentException is null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        <div class="error-container @GetErrorClass()">
+            <div class="error-content">
+                <div class="error-icon">
+                    <i class="@GetIconClass()"></i>
+                </div>
+                <div class="error-details">
+                    <h4>@GetErrorTitle()</h4>
+                    <p>@GetUserFriendlyError()</p>
+                    @if (ShowTechnicalDetails && IsDevelopment)
+                    {
+                        <div class="technical-details">
+                            <small class="text-muted">@CurrentException.Message</small>
+                            @if (CurrentException.StackTrace != null)
+                            {
+                                <pre class="stack-trace">@CurrentException.StackTrace</pre>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="error-actions">
+                    <button class="btn btn-primary" @onclick="Recover">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="NavigateHome">
+                        <i class="fas fa-home me-2"></i>Return Home
+                    </button>
+                    @if (RetryEndpoint != null)
+                    {
+                        <button class="btn btn-info" @onclick="RetryRequest">
+                            <i class="fas fa-sync me-2"></i>Retry Request
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</CascadingValue>
+
+@code {
+    [Parameter] public bool ShowTechnicalDetails { get; set; }
+    [Parameter] public string? CustomErrorMessage { get; set; }
+    [Parameter] public string? RetryEndpoint { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+
+    [Inject] private IWebHostEnvironment Environment { get; set; } = default!;
+    private bool IsDevelopment => Environment.IsDevelopment();
+
+    protected override void OnError(Exception exception)
+    {
+        Logger.LogError(exception, "Page error occurred: {Message}", exception.Message);
+        ToastService.ShowError(GetUserFriendlyError());
+        base.OnError(exception);
+    }
+
+    private string GetUserFriendlyError(Exception ex)
+    {
+        return CustomErrorMessage ?? ex switch
+                                     {
+                                         InvalidOperationException _ => "The requested operation cannot be completed at this time.",
+                                         HttpRequestException _ => "Unable to connect to the server. Please check your connection.",
+                                         UnauthorizedAccessException _ => "You don't have permission to access this resource.",
+                                         ArgumentException _ => "Invalid input provided. Please check your data.",
+                                         TimeoutException _ => "The operation timed out. Please try again.",
+                                         _ => "An unexpected error occurred. Please try again later."
+                                     };
+    }
+
+    private string GetErrorClass()
+    {
+        return CurrentException switch
+               {
+                   UnauthorizedAccessException _ => "error-auth",
+                   HttpRequestException _ => "error-network",
+                   TimeoutException _ => "error-timeout",
+                   _ => "error-general"
+               };
+    }
+
+    private string GetIconClass()
+    {
+        return CurrentException switch
+               {
+                   UnauthorizedAccessException _ => "fas fa-lock",
+                   HttpRequestException _ => "fas fa-wifi",
+                   TimeoutException _ => "fas fa-clock",
+                   _ => "fas fa-exclamation-circle"
+               };
+    }
+
+    private string GetErrorTitle()
+    {
+        return CurrentException switch
+               {
+                   UnauthorizedAccessException _ => "Access Denied",
+                   HttpRequestException _ => "Connection Error",
+                   TimeoutException _ => "Request Timeout",
+                   _ => "Oops! Something went wrong"
+               };
+    }
+
+    private void NavigateHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private async Task RetryRequest()
+    {
+        if (RetryEndpoint == null) return;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("API");
+            await client.GetAsync(RetryEndpoint);
+            await Recover();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Retry request failed");
+            ToastService.ShowError("Retry failed. Please try again later.");
+        }
+    }
+
+}
