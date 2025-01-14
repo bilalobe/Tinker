@@ -1,0 +1,82 @@
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components
+@using System.IO
+
+@* 
+    Component that manages global SEO metadata including OpenGraph tags
+    and Schema.org structured data for the website.
+*@
+
+<PageTitle>@Title</PageTitle>
+<HeadContent>
+    <meta name="description" content="@Description"/>
+    <meta name="keywords" content="@Keywords"/>
+    <meta property="og:title" content="@Title"/>
+    <meta property="og:description" content="@Description"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="@($"{BaseUrl}{CurrentUrl}")"/>
+    <script type="application/ld+json">
+        @((MarkupString)JsonSerializer.Serialize(WebsiteSchema,
+        new JsonSerializerOptions { WriteIndented = true }))
+    </script>
+</HeadContent>
+
+@code {
+    public partial class GlobalSeoMetadata
+    {
+        /// <summary>
+        /// The title of the page. Defaults to "Tinker POS".
+        /// </summary>
+        [Parameter, EditorRequired] public string Title { get; set; } = "Tinker POS";
+
+        /// <summary>
+        /// The meta description of the page.
+        /// </summary>
+        [Parameter, EditorRequired] public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Keywords for the page's meta tags.
+        /// </summary>
+        [Parameter, EditorRequired] public string Keywords { get; set; } = string.Empty;
+
+        /// <summary>
+        /// URL to the page's featured image, used in OpenGraph tags.
+        /// </summary>
+        [Parameter, EditorRequired] public string ImageUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The canonical URL for the page.
+        /// </summary>
+        [Parameter, EditorRequired] public string CanonicalUrl { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Base URL of the website. Defaults to "https://your-domain.com".
+    /// </summary>
+    [Parameter] public string BaseUrl { get; set; } = "https://your-domain.com";
+
+    /// <summary>
+    /// Current page URL path. Defaults to "/".
+    /// </summary>
+    [Parameter] public string CurrentUrl { get; set; } = "/";
+
+    private object WebsiteSchema => new
+    {
+        context = "https://schema.org",
+        type = "WebSite",
+        name = "Tinker POS",
+        description = Description,
+        url = $"{BaseUrl}{CurrentUrl}",
+        potentialAction = new[]
+        {
+            new
+            {
+                type = "SearchAction",
+                target = $"{BaseUrl}/search?q={{search_term_string}}",
+                queryInput = "required name=search_term_string"
+            }
+        }
+    };
+}

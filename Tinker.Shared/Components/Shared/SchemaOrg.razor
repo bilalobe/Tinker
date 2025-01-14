@@ -1,0 +1,28 @@
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+@* 
+    Component that renders Schema.org structured data as JSON-LD script.
+    This helps search engines better understand the content of the page.
+*@
+
+@if (SchemaData != null)
+{
+    <script type="application/ld+json">
+        @((MarkupString)JsonSerializer.Serialize(SchemaData, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        }))
+    </script>
+}
+}
+
+@code {
+    /// <summary>
+    /// The Schema.org structured data object to be serialized as JSON-LD.
+    /// Can be any object that represents valid Schema.org data.
+    /// </summary>
+    [Parameter]
+    public object? SchemaData { get; set; }
+}
