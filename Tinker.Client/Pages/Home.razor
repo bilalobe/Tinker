@@ -1,0 +1,162 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Inventory
+@using Tinker.Core.Services.Notifications
+@using Tinker.Core.Services.Reporting
+@using Tinker.Shared.DTOs.Orders
+@attribute [Authorize]
+
+<SeoMetadata Title="Dashboard - Tinker POS" Description="Overview of your pharmacy operations"
+             Keywords="pharmacy, dashboard, POS system, overview"/>
+
+<PageHeader Title="Dashboard" Icon="fa-chart-line">
+    <ActionButtons>
+        <DateRangePicker @bind-StartDate="startDate" @bind-EndDate="endDate" OnRangeChanged="LoadDashboardData"/>
+    </ActionButtons>
+</PageHeader>
+
+<CustomErrorBoundary>
+    <LoadingState IsLoading="@isLoading" Message="Loading dashboard data...">
+        <div class="row g-4">
+            <div class="col-md-3">
+                <StatsCard
+                    Title="Today's Sales"
+                    Value="@todaysSales?.ToString("C")"
+                    Icon="fa-shopping-cart"
+                    Color="primary"/>
+            </div>
+            <div class="col-md-3">
+                <StatsCard
+                    Title="Low Stock"
+                    Value="@($"{lowStockCount ?? 0} items")"
+                    Icon="fa-exclamation-triangle"
+                    Color="warning"/>
+            </div>
+            <div class="col-md-3">
+                <StatsCard
+                    Title="Expiring Soon"
+                    Value="@($"{expiringCount ?? 0} items")"
+                    Icon="fa-calendar-times"
+                    Color="danger"/>
+            </div>
+            <div class="col-md-3">
+                <StatsCard
+                    Title="Active Customers"
+                    Value="@activeCustomers?.ToString()"
+                    Icon="fa-users"
+                    Color="success"/>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-4">
+            <div class="col-md-8">
+                <DataCard Title="Recent Sales" Icon="fa-receipt">
+                    <DataTable
+                        Data="recentOrders"
+                        EmptyMessage="No recent sales"
+                        ShowFooter="true">
+                        <Headers>
+                            <th>Time</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                        </Headers>
+                        <Rows Context="order">
+                            <td>@order.OrderDate.ToShortTimeString()</td>
+                            <td>@order.CustomerName</td>
+                            <td>@order.Items.Count items</td>
+                            <td>@order.TotalAmount.ToString("C")</td>
+                        </Rows>
+                        <Footer>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Total Sales:</strong></td>
+                                <td><strong>@(recentOrders?.Sum(o => o.TotalAmount).ToString("C"))</strong></td>
+                            </tr>
+                        </Footer>
+                    </DataTable>
+                </DataCard>
+            </div>
+
+            <div class="col-md-4">
+                <DataCard Title="Quick Actions" Icon="fa-bolt">
+                    <QuickActionButton
+                        Icon="fa-cart-plus"
+                        Text="New Sale"
+                        Color="primary"
+                        Href="/sales/create"/>
+                    <QuickActionButton
+                        Icon="fa-boxes"
+                        Text="Check Stock"
+                        Color="info"
+                        Href="/inventory/stock-levels"/>
+                    <QuickActionButton
+                        Icon="fa-user-plus"
+                        Text="New Customer"
+                        Color="success"
+                        Href="/customers/create"/>
+                </DataCard>
+            </div>
+        </div>
+    </LoadingState>
+</CustomErrorBoundary>
+
+@code {
+    private bool isLoading = true;
+    private DateTime startDate = DateTime.Today;
+    private DateTime endDate = DateTime.Today;
+    private decimal? todaysSales;
+    private int? lowStockCount;
+    private int? expiringCount;
+    private int? activeCustomers;
+    private List<OrderDto>? recentOrders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            isLoading = true;
+            var tasks = new[]
+            {
+                LoadSalesData(),
+                LoadInventoryData(),
+                LoadCustomerData()
+            };
+
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowError("Failed to load dashboard", ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadSalesData()
+    {
+        var salesReport = await ReportingService.GenerateSalesReport(startDate, endDate);
+        todaysSales = salesReport.TotalSales;
+        recentOrders = salesReport.RecentOrders.Take(5).ToList();
+    }
+
+    private async Task LoadInventoryData()
+    {
+        var inventoryReport = await InventoryService.GenerateInventoryReport();
+        lowStockCount = inventoryReport.LowStockProducts.Count;
+        expiringCount = inventoryReport.ExpiringProducts.Count;
+    }
+
+    private async Task LoadCustomerData()
+    {
+        var customerReport = await ReportingService.GenerateCustomerReport();
+        activeCustomers = customerReport.ActiveCustomers;
+    }
+
+}
