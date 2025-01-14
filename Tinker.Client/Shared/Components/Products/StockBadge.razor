@@ -1,0 +1,39 @@
+<span class="badge bg-@GetStockLevelClass() @Class" @attributes="AdditionalAttributes">
+    @if (ShowLabel)
+    {
+        <span>@GetStockLevelLabel()</span>
+    }
+    <span>@Quantity items</span>
+</span>
+
+@code {
+    [Parameter] public int Quantity { get; set; }
+    [Parameter] public bool ShowLabel { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string GetStockLevelClass()
+    {
+        return Quantity switch
+               {
+                   <= 0 => "danger",
+                   <= 5 => "warning",
+                   <= 10 => "info",
+                   _ => "success"
+               };
+    }
+
+    private string GetStockLevelLabel()
+    {
+        return Quantity switch
+               {
+                   <= 0 => "Out of Stock",
+                   <= 5 => "Low Stock",
+                   <= 10 => "Medium Stock",
+                   _ => "In Stock"
+               };
+    }
+
+}

@@ -1,0 +1,29 @@
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th>Batch #</th>
+            <th>Quantity</th>
+            <th>Expiry</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var batch in Items.OrderBy(b => b.ExpiryDate))
+        {
+            <tr>
+                <td>@batch.BatchNumber</td>
+                <td>@batch.Quantity</td>
+                <td>@batch.ExpiryDate.ToShortDateString()</td>
+                <td>
+                    <ExpiryBadge Date="@batch.ExpiryDate"/>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<BatchItem> Items { get; set; } = Array.Empty<BatchItem>();
+}
