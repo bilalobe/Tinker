@@ -1,0 +1,52 @@
+.error-container {
+    padding: 2rem;
+    border-radius: 0.5rem;
+    background-color: var(--bs-light);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.error-container.error-auth {
+    border-left: 5px solid var(--bs-danger);
+}
+
+.error-container.error-network {
+    border-left: 5px solid var(--bs-warning);
+}
+
+.error-container.error-timeout {
+    border-left: 5px solid var(--bs-info);
+}
+
+.error-container.error-general {
+    border-left: 5px solid var(--bs-secondary);
+}
+
+.error-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.error-icon {
+    font-size: 2rem;
+    color: var(--bs-gray);
+}
+
+.error-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.technical-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--bs-gray-100);
+    border-radius: 0.25rem;
+}
+
+.stack-trace {
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    margin-top: 0.5rem;
+}
