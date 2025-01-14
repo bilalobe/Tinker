@@ -1,0 +1,15 @@
+{
+  "configurations": {
+    "tinker.client": {
+      "platform": "dotnet",
+      "framework": "blazor",
+      "appLocation": ".",
+      "outputLocation": "wwwroot",
+      "appBuildCommand": "dotnet publish -c Release",
+      "apiLocation": "../Tinker.Server",
+      "apiBuildCommand": "dotnet publish -c Release",
+      "appDevserverUrl": "https://localhost:5001",
+      "apiDevserverUrl": "https://localhost:7071"
+    }
+  }
+}
