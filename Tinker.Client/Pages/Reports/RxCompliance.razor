@@ -1,0 +1,75 @@
+@page "/reports/rx-compliance"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Reporting
+@attribute [Authorize]
+@inject ReportingService ReportingService
+@inject NavigationManager NavigationManager
+
+<SeoMetadata
+    Title="Rx Compliance Report - Tinker POS"
+    Description="@($"Monitor prescription compliance and track {report?.RxOrders.Count} orders")"
+    Keywords="rx compliance, prescriptions, pharmacy management, compliance tracking"
+    ImageUrl="@($"{NavigationManager.BaseUri}images/rx-compliance.png")"
+    CanonicalUrl="@NavigationManager.Uri"/>
+
+<div class="card">
+    <div class="card-body">
+        <h3>Rx Compliance Report</h3>
+
+        @if (report != null)
+        {
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Products</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var order in report.RxOrders)
+                {
+                    <tr>
+                        <td>@order.Id</td>
+                        <td>@order.Date.ToShortDateString()</td>
+                        <td>@order.CustomerName</td>
+                        <td>
+                            @string.Join(", ", order.Items
+                                .Where(i => i.Product.RequiresRx)
+                                .Select(i => i.Product.Name))
+                        </td>
+                        <td>
+                                <span class="badge bg-@GetComplianceClass(order)">
+                                    @order.Status
+                                </span>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private Report? report;
+
+    protected override async Task OnInitializedAsync()
+    {
+        report = await ReportingService.GenerateRxComplianceReport();
+    }
+
+    private string GetComplianceClass(Order order)
+    {
+        return order.Status switch
+               {
+                   "Completed" => "success",
+                   "Processing" => "warning",
+                   "Cancelled" => "danger",
+                   _ => "secondary"
+               };
+    }
+
+}
