@@ -1,0 +1,19 @@
+@inherits Microsoft.AspNetCore.Components.Web.ErrorBoundary
+
+<div class="alert alert-danger" role="alert">
+    <h4 class="alert-heading">An error occurred</h4>
+    <p>Sorry, something went wrong. Please try again later.</p>
+</div>
+
+@code {
+
+    protected override Task OnErrorAsync(Exception exception)
+    {
+        // Log error
+        Console.Error.WriteLine(exception);
+        // Show user-friendly message
+        // Report to monitoring service
+        return Task.CompletedTask;
+    }
+
+}
