@@ -1,0 +1,79 @@
+@page "/customers"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Customers.Interfaces
+@using Tinker.Shared.DTOs.Customers
+@attribute [Authorize]
+@inject ICustomerService CustomerService
+@inject NavigationManager NavigationManager
+
+<SeoMetadata Title="Customers - Tinker POS" Description="Manage your customer database and loyalty programs"
+             Keywords="customers, loyalty, POS system, customer management"/>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Customers</h1>
+    <button class="btn btn-primary" @onclick="CreateCustomer">
+        <i class="fas fa-plus"></i> Add Customer
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Loyalty Points</th>
+            <th>Membership Tier</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var customer in customersList)
+        {
+            <tr>
+                <td>@customer.Name</td>
+                <td>@customer.Email</td>
+                <td>@customer.PhoneNumber</td>
+                <td>@customer.LoyaltyPoints</td>
+                <td>@customer.MembershipTier</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-info" @onclick="() => ViewCustomer(customer.Id)">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => EditCustomer(customer.Id)">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private IEnumerable<CustomerDto> customersList = Array.Empty<CustomerDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        customersList = await CustomerService.GetCustomers();
+    }
+
+    private void CreateCustomer()
+    {
+        NavigationManager.NavigateTo("/customers/create");
+    }
+
+    private void ViewCustomer(int id)
+    {
+        NavigationManager.NavigateTo($"/customers/{id}");
+    }
+
+    private void EditCustomer(int id)
+    {
+        NavigationManager.NavigateTo($"/customers/{id}/edit");
+    }
+
+}

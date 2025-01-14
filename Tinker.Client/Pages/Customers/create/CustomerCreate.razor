@@ -1,0 +1,103 @@
+@page "/customers/create"
+@using System.ComponentModel.DataAnnotations
+@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Customers.Interfaces
+@using Tinker.Shared.DTOs.Customers
+@attribute [Authorize]
+@inject ICustomerService CustomerService
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<div class="card">
+    <div class="card-body">
+        <h3 class="card-title mb-4">Add New Customer</h3>
+
+        <EditForm Model="@customerModel" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Name:</label>
+                    <InputText @bind-Value="customerModel.Name" class="form-control"/>
+                    <ValidationMessage For="@(() => customerModel.Name)"/>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email:</label>
+                    <InputText @bind-Value="customerModel.Email" class="form-control"/>
+                    <ValidationMessage For="@(() => customerModel.Email)"/>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Phone:</label>
+                    <InputText @bind-Value="customerModel.PhoneNumber" class="form-control"/>
+                    <ValidationMessage For="@(() => customerModel.PhoneNumber)"/>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Membership Tier:</label>
+                    <InputSelect @bind-Value="customerModel.MembershipTier" class="form-control">
+                        <option value="Basic">Basic</option>
+                        <option value="Silver">Silver</option>
+                        <option value="Gold">Gold</option>
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Create</button>
+                <button type="button" class="btn btn-outline-secondary"
+                        @onclick="@(() => NavigationManager.NavigateTo("/customers"))">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private readonly CustomerModel customerModel = new();
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var customer = new CustomerDto
+
+            {
+                Name = customerModel.Name,
+                Email = customerModel.Email,
+                PhoneNumber = customerModel.PhoneNumber,
+                MembershipTier = customerModel.MembershipTier
+            };
+
+            await CustomerService.AddCustomerAsync(customer);
+            ToastService.ShowSuccess("Customer created successfully");
+            NavigationManager.NavigateTo("/customers");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error creating customer: {ex.Message}");
+        }
+    }
+
+    private class CustomerModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(100, ErrorMessage = "Name is too long")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Phone number is required")]
+        [Phone(ErrorMessage = "Invalid phone number format")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        public string MembershipTier { get; set; } = "Basic";
+    }
+
+}

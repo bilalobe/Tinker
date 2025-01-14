@@ -1,0 +1,126 @@
+﻿@page "/customers/{CustomerId:int}"
+@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Customers.Interfaces
+@using Tinker.Shared.DTOs.Customers
+@using Tinker.Shared.DTOs.Orders
+@attribute [Authorize]
+@inject ICustomerService CustomerService
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageHeader Title="@(customer?.Name ?? "Customer Profile")" Icon="fa-user">
+    <BreadcrumbTrail>
+        <BreadcrumbItem Href="/customers" Text="Customers"/>
+        <BreadcrumbItem Text="@(customer?.Name ?? CustomerId.ToString())"/>
+    </BreadcrumbTrail>
+</PageHeader>
+
+<LoadingState IsLoading="@isLoading" Message="Loading customer profile...">
+    @if (customer != null)
+    {
+        <div class="row g-4">
+            <div class="col-md-8">
+                <DataCard Title="Customer Information">
+                    <DetailsList>
+                        <DetailsItem Label="Name" Value="@customer.Name"/>
+                        <DetailsItem Label="Email" Value="@customer.Email"/>
+                        <DetailsItem Label="Phone" Value="@customer.PhoneNumber"/>
+                        <DetailsItem Label="Loyalty Points" Value="@customer.LoyaltyPoints.ToString()"/>
+                        <DetailsItem Label="Membership Tier" Value="@customer.MembershipTier"/>
+                    </DetailsList>
+                </DataCard>
+
+                <DataCard Title="Recent Orders" Class="mt-4">
+                    <DataTable Data="recentOrders" EmptyMessage="No orders found">
+                        <!-- Add your table structure here -->
+                    </DataTable>
+                </DataCard>
+            </div>
+
+            <div class="col-md-4">
+                <DataCard Title="Actions">
+                    <ActionButton Icon="edit" Text="Edit Profile" OnClick="@(() => NavigateToEdit())"/>
+                    <ActionButton Icon="history" Text="Order History" OnClick="ViewOrderHistory"/>
+                    <ActionButton Icon="chart-line" Text="Purchase Analysis" OnClick="ViewPurchaseAnalysis"/>
+                </DataCard>
+
+                <DataCard Title="Customer Stats" Class="mt-4">
+                    <CustomerMetrics Stats="@customerStats"/>
+                </DataCard>
+            </div>
+        </div>
+    }
+</LoadingState>
+
+@code {
+    [Parameter] public int CustomerId { get; set; }
+
+    private CustomerDto? customer;
+    private CustomerStatistics? customerStats;
+    private List<OrderDto> recentOrders = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomerData();
+    }
+
+    private async Task LoadCustomerData()
+    {
+        try
+        {
+            isLoading = true;
+            var tasks = new[]
+            {
+                LoadCustomerProfile(),
+                LoadCustomerStats(),
+                LoadRecentOrders()
+            };
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Failed to load customer profile: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadCustomerProfile()
+    {
+        customer = await CustomerService.GetCustomerByIdAsync(CustomerId);
+        if (customer == null)
+        {
+            ToastService.ShowError("Customer not found");
+        }
+    }
+
+    private async Task LoadCustomerStats()
+    {
+        // Implement loading customer stats logic here
+    }
+
+    private async Task LoadRecentOrders()
+    {
+        // Implement loading recent orders logic here
+    }
+
+    private void NavigateToEdit()
+    {
+        NavigationManager.NavigateTo($"/customers/{CustomerId}/edit");
+    }
+
+    private void ViewOrderHistory()
+    {
+        // Implement view order history logic here
+    }
+
+    private void ViewPurchaseAnalysis()
+    {
+        // Implement view purchase analysis logic here
+    }
+
+}
