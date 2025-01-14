@@ -1,0 +1,158 @@
+﻿@page "/products"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Notifications
+@using Tinker.Core.Services.Products
+@using Tinker.Shared.DTOs.Inventory
+@attribute [Authorize(Roles = "ProductManager,Admin,InventoryManager")]
+
+<SeoMetadata
+    Title="Products - Tinker POS"
+    Description="Manage and track your pharmacy product inventory"
+    Keywords="pharmacy products, inventory management, stock control, POS system"
+    CanonicalUrl="@NavigationManager.Uri"/>
+
+<SchemaOrg SchemaData="@productListSchema"/>
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="Products" Icon="fa-box">
+    <ActionButtons>
+        <AuthorizeView Roles="ProductManager,Admin">
+            <button class="btn btn-primary" @onclick="CreateProduct">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+        </AuthorizeView>
+    </ActionButtons>
+</PageHeader>
+
+<PageErrorBoundary
+    ShowTechnicalDetails="true"
+    RetryEndpoint="/api/products"
+    CustomErrorMessage="Unable to load product catalog">
+    <LoadingState IsLoading="@isLoading" Message="Loading products...">
+        <DataCard IsLoading="@isLoading" HasError="@hasError" ErrorMessage="@errorMessage">
+            <FilterBar>
+                <SearchInput @bind-Value="searchTerm" Placeholder="Search products..." OnSearch="HandleSearch"/>
+                <CategoryFilter @bind-Selected="selectedCategory" Categories="categories"/>
+            </FilterBar>
+
+            <DataTable Data="filteredProducts" Context="product">
+                <Headers>
+                    <th>Reference</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </Headers>
+                <Rows>
+                    <td>@product.Reference</td>
+                    <td>@product.Name</td>
+                    <td>@product.Price.ToString("C")</td>
+                    <td>
+                        <StockBadge Quantity="@productQuantities[product.Id]"/>
+                    </td>
+                    <td>
+                        <ActionMenu>
+                            <ActionMenuItem Icon="eye" Text="View" OnClick="@(() => ViewProduct(product.Id))"/>
+                            <ActionMenuItem Icon="edit" Text="Edit" OnClick="@(() => EditProduct(product.Id))"/>
+                        </ActionMenu>
+                    </td>
+                </Rows>
+            </DataTable>
+        </DataCard>
+    </LoadingState>
+</PageErrorBoundary>
+
+@code {
+    [Inject] private IWebHostEnvironment environment { get; set; } = default!;
+    private bool isLoading = true;
+    private bool hasError;
+    private string errorMessage = string.Empty;
+    private string searchTerm = string.Empty;
+    private string selectedCategory = string.Empty;
+    private IEnumerable<ProductDto> products = Enumerable.Empty<ProductDto>();
+    private readonly Dictionary<int, int> productQuantities = new();
+    private List<Product> productListSchema = new();
+    private IEnumerable<ProductDto> filteredProducts = Enumerable.Empty<ProductDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            hasError = true;
+            errorMessage = ex.Message;
+            await NotificationService.ShowError("Failed to load products", ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadData()
+    {
+        products = await ProductService.GetProducts();
+        foreach (var product in products)
+        {
+            var entity = await ProductService.GetProductEntityById(product.Id);
+            if (entity != null)
+            {
+                productQuantities[product.Id] = entity.Quantity;
+            }
+        }
+
+        productListSchema = products.Select(p => new Product
+        {
+            Name = p.Name,
+            Description = p.Name,
+            SKU = p.Reference,
+            Offers = new Offer
+            {
+                Price = p.Price,
+                PriceCurrency = "MAD",
+                Availability = productQuantities[p.Id] > 0
+                    ? "https://schema.org/InStock"
+                    : "https://schema.org/OutOfStock"
+            }
+        }).ToList();
+
+        filteredProducts = FilterProducts();
+    }
+
+    private IEnumerable<ProductDto> FilterProducts()
+    {
+        return products.Where(p =>
+            (string.IsNullOrEmpty(searchTerm) ||
+             p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             p.Reference.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(selectedCategory) ||
+             p.CategoryId.ToString() == selectedCategory));
+    }
+
+    private async Task HandleSearch()
+    {
+        filteredProducts = FilterProducts();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void CreateProduct()
+    {
+        NavigationManager.NavigateTo("/products/create");
+    }
+
+    private void EditProduct(int id)
+    {
+        NavigationManager.NavigateTo($"/products/edit/{id}");
+    }
+
+    private void ViewProduct(int id)
+    {
+        NavigationManager.NavigateTo($"/products/{id}");
+    }
+
+}

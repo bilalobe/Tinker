@@ -1,0 +1,187 @@
+@page "/products/{id:int}"
+@using Blazored.Modal
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Domain.Inventory.ValueObjects
+@using Tinker.Core.Services.Notifications
+@using Tinker.Core.Services.Products.Interfaces
+@using Tinker.Shared.DTOs.Inventory
+@attribute [Authorize(Roles = "ProductManager,Admin,InventoryManager")]
+@inject IProductService ProductService
+@inject NavigationManager NavigationManager
+
+<SeoMetadata Title="@($"{product?.Name ?? "Product"} Details - Tinker POS")"
+             Description="@($"View details for {product?.Name}. Current stock: {quantity} units")"
+             Keywords="@($"product details, {product?.Name}, inventory management, stock tracking")"
+             CanonicalUrl="@NavigationManager.Uri"/>
+
+<SchemaOrg SchemaData="@productSchema"/>
+
+<PageHeader Title="@(product?.Name ?? "Product Details")" Icon="fa-box">
+    <BreadcrumbTrail>
+        <BreadcrumbItem Href="/products" Text="Products"/>
+        <BreadcrumbItem Text="@(product?.Reference ?? id.ToString())"/>
+    </BreadcrumbTrail>
+    <ActionButtons>
+        <button class="btn btn-primary" @onclick="() => EditProduct(Id)">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+    </ActionButtons>
+</PageHeader>
+
+<ErrorBoundary @ref="errorBoundary">
+    <LoadingState IsLoading="@isLoading" Message="Loading product details...">
+        @if (product != null)
+        {
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <LoadingState IsLoading="@loadingDetails" Message="Loading details..." Centered="false">
+                        <DataCard Title="Product Information">
+                            <DetailsList>
+                                <DetailsItem Label="Reference" Value="@product.Reference"/>
+                                <DetailsItem Label="Name" Value="@product.Name"/>
+                                <DetailsItem Label="Category" Value="@product.CategoryName"/>
+                                <DetailsItem Label="Price" Value="@product.Price.ToString("C")"/>
+                                <DetailsItem Label="Stock Level">
+                                    <StockBadge Quantity="@quantity" ShowLabel="true"/>
+                                </DetailsItem>
+                                @if (!string.IsNullOrEmpty(product.Description))
+                                {
+                                    <DetailsItem Label="Description" Value="@product.Description"/>
+                                }
+                            </DetailsList>
+                        </DataCard>
+
+                        <DataCard Title="Stock History" Class="mt-4">
+                            <StockHistoryChart Data="@stockHistory"/>
+                        </DataCard>
+                    </LoadingState>
+                </div>
+
+                <div class="col-lg-4">
+                    <LoadingState IsLoading="@loadingAnalytics" Message="Loading analytics..." Centered="false">
+                        <DataCard Title="Quick Actions">
+                            <AuthorizeView Roles="ProductManager,Admin">
+                                <ActionButton Icon="plus" Text="Add Stock" OnClick="AddStock" Color="success"/>
+                                <ActionButton Icon="minus" Text="Remove Stock" OnClick="RemoveStock" Color="warning"/>
+                            </AuthorizeView>
+                            <ActionButton Icon="history" Text="View History" OnClick="ViewStockHistory" Color="info"/>
+                            <AuthorizeView Roles="Admin">
+                                <ActionButton Icon="trash" Text="Delete Product" OnClick="DeleteProduct"
+                                              Color="danger"/>
+                            </AuthorizeView>
+                        </DataCard>
+
+                        <DataCard Title="Sales Analytics" Class="mt-4">
+                            <SalesMetrics ProductId="@Id"/>
+                        </DataCard>
+
+                        <DataCard Title="Batch Information" Class="mt-4">
+                            <BatchList Items="@product.BatchItems"/>
+                        </DataCard>
+                    </LoadingState>
+                </div>
+            </div>
+        }
+    </LoadingState>
+</ErrorBoundary>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private bool isLoading = true;
+    private bool loadingDetails;
+    private bool loadingAnalytics;
+    private ProductDto? product;
+    private int quantity;
+    private Product? productSchema;
+    private ErrorBoundary? errorBoundary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProductData();
+    }
+
+    private async Task LoadProductData()
+    {
+        try
+        {
+            isLoading = true;
+            loadingDetails = true;
+            loadingAnalytics = true;
+
+            await LoadProductDetails();
+            loadingDetails = false;
+
+            var analyticsTask = LoadAnalytics();
+            await analyticsTask;
+            loadingAnalytics = false;
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowError("Failed to load product details", ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AddStock()
+    {
+        var parameters = new ModalParameters()
+            .Add(nameof(StockAdjustmentModal.ProductId), Id)
+            .Add(nameof(StockAdjustmentModal.Operation), StockOperation.Add);
+
+        var modal = Modal.Show<StockAdjustmentModal>("Add Stock", parameters);
+        var result = await modal.Result;
+
+        if (result.Confirmed)
+        {
+            await LoadProductData();
+        }
+    }
+
+    private void EditProduct(int id)
+    {
+        NavigationManager.NavigateTo($"/products/edit/{id}");
+    }
+
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+
+    private void ViewStockHistory()
+    {
+        // Implement the logic to view stock history
+    }
+
+    private void ViewSalesAnalysis()
+    {
+        // Implement the logic to view sales analysis
+    }
+
+    private async Task DeleteProduct()
+    {
+        var result = await DialogService.Confirm(
+            "Delete Product",
+            $"Are you sure you want to delete {product?.Name}?",
+            "Delete",
+            "Cancel");
+
+        if (result)
+        {
+            try
+            {
+                await ProductService.DeleteProduct(Id);
+                await NotificationService.ShowSuccess("Product deleted successfully");
+                NavigationManager.NavigateTo("/products");
+            }
+            catch (Exception ex)
+            {
+                await NotificationService.ShowError("Failed to delete product", ex.Message);
+            }
+        }
+    }
+
+}
+

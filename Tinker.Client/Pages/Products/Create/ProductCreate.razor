@@ -1,0 +1,152 @@
+@page "/products/create"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Notifications
+@using Tinker.Core.Services.Products
+@using Tinker.Shared.DTOs.Inventory
+@attribute [Authorize(Roles = "ProductManager,Admin")]
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+
+<SeoMetadata
+    Title="Create Product - Tinker POS"
+    Description="Add a new product to your pharmacy inventory"
+    Keywords="add product, new item, pharmacy inventory, product management"
+    CanonicalUrl="@NavigationManager.Uri"/>
+
+<PageHeader Title="Create Product" Icon="fa-plus-circle">
+    <BreadcrumbTrail>
+        <BreadcrumbItem Href="/products" Text="Products"/>
+        <BreadcrumbItem Text="Create"/>
+    </BreadcrumbTrail>
+</PageHeader>
+
+<PageErrorBoundary>
+    <DataCard>
+        <EditForm Model="@productModel" OnValidSubmit="@HandleValidSubmit">
+            <FluentValidationValidator/>
+            <CustomValidation @ref="customValidation"/>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <FormField Label="Reference" Required="true">
+                        <InputText @bind-Value="productModel.Reference" class="form-control"/>
+                        <ValidationMessage For="@(() => productModel.Reference)"/>
+                        <small class="text-muted">Unique product identifier</small>
+                    </FormField>
+
+                    <FormField Label="Name">
+                        <InputText @bind-Value="productModel.Name" class="form-control"/>
+                    </FormField>
+
+                    <FormField Label="Price">
+                        <InputDecimal @bind-Value="productModel.Price" class="form-control"/>
+                    </FormField>
+
+                    <FormField Label="Initial Stock">
+                        <InputNumber @bind-Value="productModel.InitialStock" class="form-control"/>
+                    </FormField>
+
+                    <FormField Label="Minimum Stock Level" Required="true">
+                        <InputNumber @bind-Value="productModel.MinimumStockLevel" class="form-control"/>
+                        <small class="text-muted">Alert threshold for low stock</small>
+                    </FormField>
+                </div>
+
+                <div class="col-md-6">
+                    <FormField Label="Description">
+                        <InputTextArea @bind-Value="productModel.Description" class="form-control" rows="4"/>
+                    </FormField>
+
+                    <FormField Label="Category">
+                        <InputSelect @bind-Value="productModel.CategoryId" class="form-control">
+                            <option value="">Select a category...</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </InputSelect>
+                    </FormField>
+
+                    <FormField Label="Requires Prescription">
+                        <InputCheckbox @bind-Value="productModel.RequiresRx"/>
+                        <small class="text-muted">Check if prescription is required</small>
+                    </FormField>
+                </div>
+            </div>
+
+            <FormActions>
+                <SaveButton IsSubmitting="@isSubmitting"/>
+                <CancelButton Href="/products"/>
+            </FormActions>
+        </EditForm>
+    </DataCard>
+</PageErrorBoundary>
+
+@code {
+    private CustomValidation? customValidation;
+    private readonly ProductModel productModel = new();
+    private bool isSubmitting;
+    private readonly List<CategoryDto> categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            categories = await CategoryService.GetCategories();
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowError("Failed to load categories", ex.Message);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            if (await ProductService.ReferenceExists(productModel.Reference))
+            {
+                customValidation?.DisplayErrors(new Dictionary<string, List<string>>
+                {
+                    { nameof(productModel.Reference), new List<string> { "Reference already exists" } }
+                });
+                return;
+            }
+
+            isSubmitting = true;
+            var product = new ProductDto
+            {
+                Reference = productModel.Reference,
+                Name = productModel.Name,
+                Price = productModel.Price,
+                InitialStock = productModel.InitialStock,
+                Description = productModel.Description,
+                CategoryId = productModel.CategoryId
+            };
+
+            await ProductService.AddProduct(product);
+            NavigationManager.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowError("Failed to create product", ex.Message);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private class ProductModel
+    {
+        public string Reference { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int InitialStock { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public int MinimumStockLevel { get; set; }
+        public bool RequiresRx { get; set; }
+    }
+
+}

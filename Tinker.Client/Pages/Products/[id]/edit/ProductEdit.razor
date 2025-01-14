@@ -1,0 +1,109 @@
+@page "/products/edit/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Tinker.Core.Services.Products
+@using Tinker.Shared.DTOs.Inventory
+@attribute [Authorize(Roles = "ProductManager,Admin")]
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="Edit Product" Icon="fa-edit"></PageHeader>
+<BreadcrumbTrail>
+    <BreadcrumbItem Href="/products" Text="Products"/>
+    <BreadcrumbItem Text="Edit"/>
+</BreadcrumbTrail>
+
+<h3>Edit Product</h3>
+
+@if (product == null)
+{
+    <div class="text-center my-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title mb-4">Edit Product</h3>
+
+            <EditForm Model="@product" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator/>
+                <ValidationSummary class="text-danger mb-4"/>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Reference:</label>
+                        <InputText @bind-Value="product.Reference" class="form-control"/>
+                        <ValidationMessage For="@(() => product.Reference)" class="text-danger"/>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Description:</label>
+                        <InputText @bind-Value="product.Description" class="form-label"/>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Name:</label>
+                        <InputText @bind-Value="product.Name" class="form-control"/>
+                        <ValidationMessage For="@(() => product.Name)" class="text-danger"/>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Price:</label>
+                        <InputNumber @bind-Value="product.Price" class="form-control"/>
+                        <ValidationMessage For="@(() => product.Price)" class="text-danger"/>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Quantity:</label>
+                        <InputNumber @bind-Value="quantity" class="form-control"/>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary"
+                            @onclick="@(() => NavigationManager.NavigateTo("/products"))">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ProductDto? product;
+    private int quantity;
+
+    protected override async Task OnInitializedAsync()
+    {
+        product = await ProductService.GetProductById(Id);
+        var entity = await ProductService.GetProductEntityById(Id);
+        if (entity != null)
+        {
+            quantity = entity.Quantity;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (product != null)
+        {
+            await ProductService.UpdateProduct(product);
+            var entity = await ProductService.GetProductEntityById(Id);
+            if (entity != null)
+            {
+                entity.Quantity = quantity;
+                await ProductService.UpdateProductEntity(entity);
+            }
+
+            NavigationManager.NavigateTo("/products");
+        }
+    }
+
+}
