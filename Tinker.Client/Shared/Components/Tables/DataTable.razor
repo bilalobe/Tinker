@@ -1,0 +1,49 @@
+<div class="table-responsive">
+    <table class="table @Class">
+        <thead>
+        <tr>
+            @Headers
+        </tr>
+        </thead>
+        <tbody>
+        @if (IsLoading)
+        {
+            <tr>
+                <td colspan="100%" class="text-center p-3">
+                    <LoadingState Message="@LoadingMessage"/>
+                </td>
+            </tr>
+        }
+        else if (!Data.Any())
+        {
+            <tr>
+                <td colspan="100%" class="text-center p-3">
+                    <i class="fas fa-info-circle me-2"></i>@EmptyMessage
+                </td>
+            </tr>
+        }
+        else
+        {
+            @Rows
+        }
+        </tbody>
+        @if (ShowFooter)
+        {
+            <tfoot>
+            @Footer
+            </tfoot>
+        }
+    </table>
+</div>
+
+@code {
+    [Parameter] public string Class { get; set; } = "table-hover";
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string LoadingMessage { get; set; } = "Loading data...";
+    [Parameter] public string EmptyMessage { get; set; } = "No data available";
+    [Parameter] public IEnumerable<object> Data { get; set; } = Array.Empty<object>();
+    [Parameter] public RenderFragment? Headers { get; set; }
+    [Parameter] public RenderFragment? Rows { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public bool ShowFooter { get; set; }
+}
