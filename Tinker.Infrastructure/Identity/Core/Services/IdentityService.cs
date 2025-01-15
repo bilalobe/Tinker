@@ -153,9 +153,9 @@ public class IdentityService : IIdentityService
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? 
-                                   throw new InvalidOperationException("JWT key not configured")));
+        var jwtKey = _configuration.GetValue<string>("Jwt:Key") ?? throw new InvalidOperationException("JWT key not configured");
+        // Use the key from a secure configuration source
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(jwtKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -184,17 +184,19 @@ public class IdentityService : IIdentityService
 
     private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {
+        var jwtKey = _configuration.GetValue<string>("Jwt:Key") ?? throw new InvalidOperationException("JWT key not configured");
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(jwtKey));
+
         var tokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false,
-            ValidateIssuer = false,
+            ValidateAudience = true,
+            ValidAudience = _configuration["Jwt:Audience"],
+            ValidateIssuer = true,
+            ValidIssuer = _configuration["Jwt:Issuer"],
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? 
-                                       throw new InvalidOperationException("JWT key not configured"))),
+            IssuerSigningKey = key,
             ValidateLifetime = false // we are only validating the token signature here
         };
-
         var tokenHandler = new JwtSecurityTokenHandler();
         var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
         if (securityToken is not JwtSecurityToken jwtSecurityToken ||
