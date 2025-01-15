@@ -7,6 +7,8 @@ using Tinker.Infrastructure.Identity.Core.Interfaces;
 using Tinker.Infrastructure.Identity.Core.Models;
 using Tinker.Shared.Models.Responses;
 
+namespace Tinker.Infrastructure.Identity.Authentication.Services;
+
 public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
