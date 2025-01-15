@@ -27,7 +27,7 @@ public class CacheService : ICacheService
         _metrics = metrics;
         _compressionService = compressionService;
 
-        _retryPolicy = Policy
+        _retryPolicy = Microsoft.AspNetCore.Authorization.Policy
             .Handle<Exception>()
             .WaitAndRetryAsync(3,
                 retryAttempt => TimeSpan.FromMilliseconds(Math.Pow(2, retryAttempt) * 100),
@@ -164,7 +164,7 @@ public class CacheService : ICacheService
     public async Task<T?> GetOrSetAsync<T>(string key, Func<Task<T>> factory, CacheOptions? options = null, CancellationToken cancellationToken = default)
     {
         var value = await GetAsync<T>(key, cancellationToken);
-        if (value != null) return value;
+        if (!object.Equals(value, default(T))) return value;
 
         var newValue = await factory();
         await SetAsync(key, newValue, options, cancellationToken);
