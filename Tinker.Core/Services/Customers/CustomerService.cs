@@ -10,8 +10,8 @@ using Tinker.Shared.Exceptions;
 
 namespace Tinker.Core.Services.Customers;
 
-public class CustomerService(
-    ICustomerRepository      customerRepository,
+public partial class CustomerService(
+    ICustomerRepository customerRepository,
     ILogger<CustomerService> logger)
     : ICustomerService
 {
@@ -161,9 +161,9 @@ public class CustomerService(
         }
     }
 
-    private bool IsValidPhoneNumber(string phoneNumber)
+    private static bool IsValidPhoneNumber(string phoneNumber)
     {
-        return Regex.IsMatch(phoneNumber, @"^\+?[\d\s-()]+$");
+        return MyRegex().IsMatch(phoneNumber);
     }
 
     public async Task CreateCustomer(Customer customer)
@@ -182,4 +182,7 @@ public class CustomerService(
         await customerRepository.UpdateAsync(customer);
         logger.LogInformation("Loyalty points updated for customer {CustomerId}", customerId);
     }
+
+    [GeneratedRegex(@"^\+?[\d\s-()]+$")]
+    private static partial Regex MyRegex();
 }
