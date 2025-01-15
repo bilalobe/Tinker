@@ -29,8 +29,9 @@ public class TokenService : ITokenService
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        var jwtKey = _configuration.GetValue<string>("Jwt:Key") ?? throw new InvalidOperationException("JWT key not configured");
+        // Use the key from a secure configuration source
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(jwtKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -55,7 +56,8 @@ public class TokenService : ITokenService
             throw new SecurityTokenException("Token has been revoked");
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+        var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key not configured");
+        var key = Encoding.UTF8.GetBytes(jwtKey);
 
         var validationParameters = new TokenValidationParameters
         {
