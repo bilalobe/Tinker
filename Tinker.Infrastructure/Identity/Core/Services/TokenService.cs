@@ -56,8 +56,8 @@ public class TokenService : ITokenService
             throw new SecurityTokenException("Token has been revoked");
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key not configured");
-        var key = Encoding.UTF8.GetBytes(jwtKey);
+        var jwtKey = _configuration.GetValue<string>("Jwt:Key") ?? throw new InvalidOperationException("JWT key not configured");
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(jwtKey));
 
         var validationParameters = new TokenValidationParameters
         {
@@ -67,7 +67,7 @@ public class TokenService : ITokenService
             ValidateIssuerSigningKey = true,
             ValidIssuer = _configuration["Jwt:Issuer"],
             ValidAudience = _configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(key)
+            IssuerSigningKey = key
         };
 
         try
